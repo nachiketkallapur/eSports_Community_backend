@@ -7,8 +7,8 @@ router.get('/', (req, res, next) => {
 });
 
 router.post('/',(req,res,next) => {
- console.log("Body: ",req.body);
-  res.send("Successfully received body").status(200);
+ console.log("Player Body received ",req.body);
+  res.send("Successfully player body received").status(200);
 }) 
 
 module.exports = router;
