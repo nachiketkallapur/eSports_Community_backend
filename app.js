@@ -10,6 +10,7 @@ var usersRouter = require('./routes/users');
 var playerRouter = require('./routes/player');
 var companyRouter = require('./routes/company');
 var clanRouter = require('./routes/clan');
+var loginRouter = require('./routes/login');
 var app = express();
 
 // view engine setup
@@ -24,6 +25,7 @@ app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 
 app.use('/', indexRouter);
+app.use('/login', loginRouter);
 app.use('/users', usersRouter);
 app.use('/player',playerRouter);
 app.use('/company',companyRouter);
