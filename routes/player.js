@@ -8,51 +8,83 @@ router.get("/", (req, res, next) => {
   res.send({ name: "Nachiket" });
 });
 
-router.post("/", (req, res, next) => {
+router.post("/", async (req, res, next) => {
   console.log("Player Body received ", req.body);
-  // res.send("Successfully player body received").status(200);
-});
-
-router.post("/test", async (req, res, next) => {
-  console.log("Body: ", req.body);
+  var isResponseSent = false;
+  const {
+    playerName,
+    playerAge,
+    playerSex,
+    playerCity,
+    playerState,
+    playerYTChannel,
+    playerUsername,
+    playerPassword,
+  } = req.body;
+  try {
+    var salt = await bcrypt.genSalt();
+    var hashedPassword = await bcrypt.hash(playerPassword, salt);
+  } catch (err) {
+    res.send(err);
+    isResponseSent = true;
+  }
 
   try {
-    // const salt = await bcrypt.genSalt();
-    // const hashedPassword = await bcrypt.hash(req.body.password, salt);
-    // console.log("Salt: ", salt);
-    // console.log("hashedPassword: ", hashedPassword);
-    // var values = [];
-    // values.push(req.body.name.toString());
-    // values.push(hashedPassword.toString());
-    // console.log(values)
-
-    sql.query(`select * from test`, async (err, results, fields) => {
-      if (err) {
-        console.log(err);
-        res.send(err)
-      }
-      else {
-        var user = results.find(user => user.name===req.body.name);
-        if(!user) {
-          return res.send("user not found").status(400);
-        }
-        try {
-          if(await bcrypt.compare(req.body.password, user.password)){
-            res.send("Successful login");
-          }
-          else {
-            res.send("Wrong Password");
+    sql.query(
+      "Insert into player(P_name,P_age,P_sex,P_city,P_state,P_username,P_password) values?",
+      [[[
+        playerName,
+        playerAge,
+        playerSex,
+        playerCity,
+        playerState,
+        playerUsername,
+        hashedPassword,
+      ]]],
+      (err, results, fields) => {
+        if (!err) {
+          console.log("Query1 successful");
+        } else {
+          if (!isResponseSent) {
+            res.send(err.sqlMessage);
+            isResponseSent = true;
           }
         }
-        catch(err){
-          res.send("Wrong Password");
-        }
-      }
-    });
+      },
+    );
+  } catch (error) {
+    console.log("Line 48: ", error);
+    if(!isResponseSent){
+      res.send(error.message);
+      isResponseSent=true;
+    }
+  }
 
-  } catch (err) {
-    console.log(err.message);
-    res.send("Error").status(400);
+  try {
+    sql.query(
+      "Insert into youtube(Y_channelName,P_username) values?",
+      [[[playerYTChannel, playerUsername]]],
+      (err, results, fields) => {
+        if (!err) {
+          console.log("Query2 successful");
+          console.log("Successfully added data to database");
+          if(!isResponseSent){
+            res.send("Successfully added data to database");
+            isResponseSent=true;
+          }
+        } else {
+          if(!isResponseSent){
+            res.send(err.sqlMessage);
+            isResponseSent=true;
+          }
+        }
+      },
+    );
+  } catch (error) {
+    if(!isResponseSent){
+      res.send(error.message);
+      isResponseSent=true;
+    }
   }
 });
 
