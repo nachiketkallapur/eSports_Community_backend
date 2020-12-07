@@ -3,7 +3,7 @@ var router = express.Router();
 var sql = require("../mysql-connection");
 var bcrypt = require("bcrypt");
 
-/* GET users listing. */
+
 router.get("/", (req, res, next) => {
   res.send({ name: "Nachiket" });
 });
@@ -28,22 +28,69 @@ router.post("/", async (req, res, next) => {
     res.send(err);
     isResponseSent = true;
   }
+  var iscityStatePresent=false;
+  try{
+    sql.query("select * from citystate", async (err,results,fields)=>{
+      if(err){
+        if(!isResponseSent){
+          res.send(err);
+          isResponseSent=true;
+        }
+      } else {
+        var user = results.find(user => user.P_city===playerCity);
+        console.log("User: ",user);
+        if(!user){
+          iscityStatePresent=false;
+        }else {
+          console.log("City-state exists");
+        }
+      }
+    })
+  } catch(err){
+    if(!isResponseSent){
+      res.send(err);
+      isResponseSent=true;
+    }
+  }
+
+  if(iscityStatePresent===false){
+    try {
+      sql.query("insert into citystate(P_city,P_state) values? ",
+    [[[playerCity,playerState]]],
+    (err,result,fields)=>{
+      if(err){
+        if(!isResponseSent){
+          res.send(err);
+          isResponseSent=true;
+        }
+      }
+      else{
+        console.log("New city-state-added");
+      }
+    })
+
+    } catch(error){
+      if(!isResponseSent){
+        res.send(error);
+        isResponseSent=true;
+      }
+    }
+  }
 
   try {
     sql.query(
-      "Insert into player(P_name,P_age,P_sex,P_city,P_state,P_username,P_password) values?",
+      "Insert into player(P_name,P_age,P_sex,P_city,P_username,P_password) values?",
       [[[
         playerName,
         playerAge,
         playerSex,
         playerCity,
-        playerState,
         playerUsername,
         hashedPassword,
       ]]],
       (err, results, fields) => {
         if (!err) {
-          console.log("Query1 successful");
+          console.log("Player table query successful");
         } else {
           if (!isResponseSent) {
             res.send(err.sqlMessage);
@@ -57,6 +104,7 @@ router.post("/", async (req, res, next) => {
     if(!isResponseSent){
       res.send(error.message);
       isResponseSent=true;
+
     }
   }
 
@@ -66,7 +114,7 @@ router.post("/", async (req, res, next) => {
       [[[playerYTChannel, playerUsername]]],
       (err, results, fields) => {
         if (!err) {
-          console.log("Query2 successful");
+          console.log("Youtube table query successful");
           console.log("Successfully added data to database");
           if(!isResponseSent){
             res.send("Successfully added data to database");
