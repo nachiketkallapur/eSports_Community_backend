@@ -61,64 +61,66 @@ router.post("/", async (req, res, next) => {
     }
   }
 
-  if (iscityStatePresent === false) {
+  setTimeout(() => {
+    if (iscityStatePresent === false) {
+      try {
+        sql.query(
+          "insert into citystate(P_city,P_state) values? ",
+          [[[playerCity, playerState]]],
+          (err, result, fields) => {
+            if (err) {
+              if (!isResponseSent) {
+                res.send(err);
+                isResponseSent = true;
+                return;
+              }
+            } else {
+              console.log("New city-state-added");
+            }
+          },
+        );
+      } catch (error) {
+        if (!isResponseSent) {
+          res.send(error);
+          isResponseSent = true;
+          return;
+        }
+      }
+    }
+
     try {
       sql.query(
-        "insert into citystate(P_city,P_state) values? ",
-        [[[playerCity, playerState]]],
-        (err, result, fields) => {
+        "Insert into player(P_name,P_age,P_sex,P_city,P_username,P_password) values?",
+        [[[
+          playerName,
+          playerAge,
+          playerSex,
+          playerCity,
+          playerUsername,
+          hashedPassword,
+        ]]],
+        (err, results, fields) => {
           if (err) {
+            console.log(err);
             if (!isResponseSent) {
-              res.send(err);
+              res.send(err.sqlMessage);
               isResponseSent = true;
               return;
             }
           } else {
-            console.log("New city-state-added");
+            console.log("Player table query successful");
           }
         },
       );
     } catch (error) {
+      console.log("Line 48: ", error);
       if (!isResponseSent) {
-        res.send(error);
+        res.send(error.message);
         isResponseSent = true;
         return;
       }
     }
-  }
-
-  try {
-    sql.query(
-      "Insert into player(P_name,P_age,P_sex,P_city,P_username,P_password) values?",
-      [[[
-        playerName,
-        playerAge,
-        playerSex,
-        playerCity,
-        playerUsername,
-        hashedPassword,
-      ]]],
-      (err, results, fields) => {
-        if (err) {
-          console.log(err)
-          if (!isResponseSent) {
-            res.send(err.sqlMessage);
-            isResponseSent = true;
-            return;
-          }
-        } else {
-          console.log("Player table query successful");
-        }
-      },
-    );
-  } catch (error) {
-    console.log("Line 48: ", error);
-    if (!isResponseSent) {
-      res.send(error.message);
-      isResponseSent = true;
-      return;
-    }
-  }
+  }, 1000);
 
   try {
     sql.query(
