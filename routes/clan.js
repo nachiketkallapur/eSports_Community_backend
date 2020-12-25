@@ -148,12 +148,14 @@ router.post("/update",(req,res,next) => {
         console.log(err.sqlMessage);
         if(!isResponseSent){
           res.send({message:err.sqlMessage,error:true});
+          isResponseSent=true;
           return;
         }
       } else {
         console.log("Updated clan successfully");
         if(!isResponseSent){
           res.send({message:"Updated clan successfully",error:false});
+          isResponseSent=true;
           return;
         }
       }
