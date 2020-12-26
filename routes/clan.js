@@ -136,41 +136,94 @@ router.post("/fetch", (req, res, next) => {
   }
 });
 
-router.post("/update",(req,res,next) => {
-  const { C_username, C_name, C_category, C_size, G_name } = req.body;
+router.post("/update", (req, res, next) => {
+  const {
+    C_username,
+    C_name,
+    C_category,
+    C_size,
+    G_name,
+    C_email,
+    P_username,
+  } = req.body;
   var isResponseSent = false;
+  var doesPlayerExist;
+
   try {
+    sql.query(
+      "select * from player where P_username=?",
+      [[P_username]],
+      (err, results, fields) => {
+        if (err) {
+          console.log(err.sqlMessage);
+          if (!isResponseSent) {
+            res.send({ message: err.sqlMessage, error: true });
+            isResponseSent = true;
+            doesPlayerExist = false;
+            return;
+          }
+        } else if(results.length===0){
 
-    sql.query("update clan set C_category=?, C_size=?, G_name=? where C_name=?",
-    [C_category,C_size,G_name,C_name],
-    (err,results,fields)=>{
-      if(err){
-        console.log(err.sqlMessage);
-        if(!isResponseSent){
-          res.send({message:err.sqlMessage,error:true});
-          isResponseSent=true;
-          return;
+          console.log("Player doesn't exist");
+          if(!isResponseSent){
+            res.send({message: "Invalid clan leader. Such player doesn't exist",error:true});
+            isResponseSent=true;
+            doesPlayerExist = false;
+            return;
+          }
+
+        } else {
+          console.log('Valid clan leader');
+          doesPlayerExist=true;
         }
-      } else {
-        console.log("Updated clan successfully");
-        if(!isResponseSent){
-          res.send({message:"Updated clan successfully",error:false});
-          isResponseSent=true;
-          return;
-        }
-      }
-    })
-    
+      },
+    );
   } catch (err) {
-
     console.log(err.message);
-    if(!isResponseSent){
-      res.send({message:err.message,error:true});
-      isResponseSent=true;
+    if (!isResponseSent) {
+      res.send({ message: err.message, error: true });
+      isResponseSent = true;
+      doesPlayerExist=false;
       return;
     }
   }
-  
-})
+
+  setTimeout(() => {
+    if (doesPlayerExist === true) {
+      try {
+        sql.query(
+          "update clan set C_category=?, C_size=?, G_name=?,C_email=?,P_username=? where C_name=?",
+          [C_category, C_size, G_name, C_email, P_username, C_name],
+          (err, results, fields) => {
+            if (err) {
+              console.log(err.sqlMessage);
+              if (!isResponseSent) {
+                res.send({ message: err.sqlMessage, error: true });
+                isResponseSent = true;
+                return;
+              }
+            } else {
+              console.log("Updated clan successfully");
+              if (!isResponseSent) {
+                res.send(
+                  { message: "Updated clan successfully", error: false },
+                );
+                isResponseSent = true;
+                return;
+              }
+            }
+          },
+        );
+      } catch (err) {
+        console.log(err.message);
+        if (!isResponseSent) {
+          res.send({ message: err.message, error: true });
+          isResponseSent = true;
+          return;
+        }
+      }
+    }
+  }, 1000);
+});
 
 module.exports = router;
