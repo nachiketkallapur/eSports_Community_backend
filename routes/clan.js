@@ -194,69 +194,63 @@ router.post("/update", (req, res, next) => {
 
   var isLeaderAlreadyMemberOfClan;
 
-  try{
-
-    sql.query('select * from player_isMemberOf_clan where P_username=?and C_name=? ',
-    [P_username,C_name],
-    (err,results,fields)=>{
-      if(err){
-        console.log(err);
-        if(!isResponseSent){
-          res.send({error:true,message:err.sqlMessage});
-          isResponseSent=true;
-          return;
+  try {
+    sql.query(
+      "select * from player_isMemberOf_clan where P_username=?and C_name=? ",
+      [P_username, C_name],
+      (err, results, fields) => {
+        if (err) {
+          console.log(err);
+          if (!isResponseSent) {
+            res.send({ error: true, message: err.sqlMessage });
+            isResponseSent = true;
+            return;
+          }
+        } else if (results.length === 0) {
+          isLeaderAlreadyMemberOfClan = false;
+        } else {
+          isLeaderAlreadyMemberOfClan = true;
         }
-
-      } else if(results.length===0){
-        isLeaderAlreadyMemberOfClan=false;
-      } else {
-        isLeaderAlreadyMemberOfClan=true;
-      }
-    })
-
-  } catch(err){
+      },
+    );
+  } catch (err) {
     console.log(err);
-    if(!isResponseSent){
-      res.send({error:true,message:err.message});
-      isResponseSent=true;
+    if (!isResponseSent) {
+      res.send({ error: true, message: err.message });
+      isResponseSent = true;
       return;
     }
   }
 
   setTimeout(() => {
     if (doesPlayerExist === true) {
-
-      if(isLeaderAlreadyMemberOfClan===false){
-        try{
-
-          sql.query("insert into player_isMemberOf_clan(P_username,C_name,activity) values?",
-          [[[P_username,C_name,0]]],
-          (err,results,fields)=>{
-            if(err){
-              console.log(err);
-              if(!isResponseSent){
-                res.send({error:true, message:err.sqlMessage});
-                isResponseSent=true;
-                return;
+      if (isLeaderAlreadyMemberOfClan === false) {
+        try {
+          sql.query(
+            "insert into player_isMemberOf_clan(P_username,C_name,activity) values?",
+            [[[P_username, C_name, 0]]],
+            (err, results, fields) => {
+              if (err) {
+                console.log(err);
+                if (!isResponseSent) {
+                  res.send({ error: true, message: err.sqlMessage });
+                  isResponseSent = true;
+                  return;
+                }
+              } else {
+                console.log("Leader inserted into the clan");
               }
-            
-            }else {
-              console.log("Leader inserted into the clan")
-            }
-
-          })
-
-        } catch(err){
+            },
+          );
+        } catch (err) {
           console.log(err);
-          if(!isResponseSent){
-            res.send({error:true,message:err.message});
-            isResponseSent=true;
+          if (!isResponseSent) {
+            res.send({ error: true, message: err.message });
+            isResponseSent = true;
             return;
           }
         }
       }
-
-
 
       try {
         sql.query(
@@ -302,43 +296,38 @@ router.post("/addNewPlayer", (req, res, next) => {
   const activity = 0;
   var clanName;
 
-  try{
-
-    sql.query('select * from player where P_username=?',[[playerUsername]],
-    (err,results,fields)=>{
-      if(err){
-
-        console.log(err);
-        if(!isResponseSent){
-          res.send({error:true, message:err.sqlMessage});
-          isResponseSent=true;
-          return;
+  try {
+    sql.query(
+      "select * from player where P_username=?",
+      [[playerUsername]],
+      (err, results, fields) => {
+        if (err) {
+          console.log(err);
+          if (!isResponseSent) {
+            res.send({ error: true, message: err.sqlMessage });
+            isResponseSent = true;
+            return;
+          }
+        } else if (results.length === 0) {
+          console.log("Such player doesn't exist");
+          if (!isResponseSent) {
+            res.send({ error: true, message: "Such player doesn't exist" });
+            isResponseSent = true;
+            return;
+          }
+        } else {
+          console.log("Player exists in DB");
         }
-
-      }else if(results.length===0){
-        console.log("Such player doesn't exist");
-        if(!isResponseSent){
-          res.send({error:true, message:"Such player doesn't exist"});
-          isResponseSent=true;
-          return;
-        }
-
-      } else {
-        console.log("Player exists in DB")
-      }
-
-    })
-
-  }catch(err){
-
+      },
+    );
+  } catch (err) {
     console.log(err);
-    if(!isResponseSent){
-      res.send({error:true,message:err.message});
-      isResponseSent=true;
+    if (!isResponseSent) {
+      res.send({ error: true, message: err.message });
+      isResponseSent = true;
       return;
     }
   }
-
 
   try {
     sql.query(
@@ -411,5 +400,58 @@ router.post("/addNewPlayer", (req, res, next) => {
       }
     }
   }, 1000);
+});
+
+router.post("/requestToJoin", (req, res, next) => {
+  const { clanEmail, playerUsername } = req.body;
+  var imageUrl = require("./images/game.jpg");
+
+  var nodemailer = require("nodemailer");
+  var hbs = require("nodemailer-express-handlebars");
+  var transporter = nodemailer.createTransport({
+    service: "gmail",
+    auth: {
+      user: "nachiketgk.cs18@rvce.edu.in",
+      pass: "Jaishriram123",
+    },
+  });
+
+  const handlebarOptions = {
+    viewEngine: {
+      extName: ".handlebars",
+      partialsDir: path.resolve(__dirname, "templateViews"),
+      defaultLayout: false,
+    },
+    viewPath: path.resolve(__dirname, "templateViews"),
+    extName: ".handlebars",
+  };
+
+  transporter.use(
+    "compile",
+    hbs(handlebarOptions),
+  );
+
+  var mailOptions = {
+    from: "nachiketgk.cs18@rvce.edu.in",
+    to: clanEmail,
+    subject: "eSports Community official mail service",
+    template: "main",
+    context: {
+      playerUsername,
+      imageUrl,
+    },
+  };
+
+  transporter.sendMail(mailOptions, (error, info) => {
+    if (error) {
+      res.send({ message: error.message, error: true });
+      console.log(error);
+      //   alert(error.message)
+    } else {
+      res.send({ message: info.message, error: false });
+      //   alert(info.response);
+      console.log("Email sent: " + info.response);
+    }
+  });
 });
 module.exports = router;
