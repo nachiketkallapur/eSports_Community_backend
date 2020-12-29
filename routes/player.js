@@ -192,7 +192,7 @@ router.post("/fetch", (req, res, next) => {
         (err, results, fields) => {
           if (err) {
             res.send(
-              { message: "Error in fetching particular player", data: [] },
+              { message: err.sqlMessage, error:true, data: [] },
             );
             return;
           } else if (results.length === 0) {
@@ -208,6 +208,7 @@ router.post("/fetch", (req, res, next) => {
             res.send(
               {
                 message: "Fetched particular player successfully",
+                error:false,
                 data: results,
               },
             );
@@ -225,7 +226,7 @@ router.post("/fetch", (req, res, next) => {
 
 router.post("/update", (req, res, next) => {
   console.log("Received body for update: ", req.body);
-  const { P_name, P_username, P_city, P_state, P_age, Y_channelName } =
+  const { P_name, P_username, P_city, P_state, P_age, Y_channelName,P_email } =
     req.body;
 
   // try{
@@ -246,8 +247,8 @@ router.post("/update", (req, res, next) => {
 
   try {
     sql.query(
-      "update player set P_name=?,P_age=? where P_username=?",
-      [P_name, P_age, P_username],
+      "update player set P_name=?,P_age=?,P_email=? where P_username=?",
+      [P_name, P_age,P_email, P_username],
       (err, results, fields) => {
         if (err) {
           console.log(err);

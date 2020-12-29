@@ -2,6 +2,9 @@ var express = require("express");
 var router = express.Router();
 var sql = require("../mysql-connection");
 var bcrypt = require("bcrypt");
+var nodemailer = require("nodemailer");
+var hbs = require("nodemailer-express-handlebars");
+var path = require("path");
 
 /*Add new clan*/
 router.post("/", async (req, res, next) => {
@@ -292,7 +295,8 @@ router.post("/addNewPlayer", (req, res, next) => {
   /*First time player joins any clan*/
   var isResponseSent = false;
 
-  const { playerUsername, clanUsername } = req.body;
+  const { playerUsername, clanUsername, playerEmail,playerName } = req.body;
+  console.log("299" ,req.body)
   const activity = 0;
   var clanName;
 
@@ -350,6 +354,94 @@ router.post("/addNewPlayer", (req, res, next) => {
         } else {
           console.log("Fetched clanName from clanUsername");
           clanName = results[0].C_name;
+          /*Now insert into player_isMemberOf_clan*/
+          try {
+            sql.query(
+              "insert into player_isMemberOf_clan(P_username,C_name,activity) values?",
+              [[[playerUsername, clanName, activity]]],
+              (err, results, fields) => {
+                if (err) {
+                  console.log(err);
+                  if (!isResponseSent) {
+                    res.send({ error: true, message: err.sqlMessage });
+                    isResponseSent = true;
+                    return;
+                  }
+                } else {
+                  console.log("Player added to clan successfully");
+
+                  /*Send email notification to player that he was added to a clan*/
+
+                  var transporter = nodemailer.createTransport({
+                    service: "gmail",
+                    auth: {
+                      user: "nachiketgk.cs18@rvce.edu.in",
+                      pass: "Jaishriram123",
+                    },
+                  });
+                
+                  const handlebarOptions = {
+                    viewEngine: {
+                      extName: ".handlebars",
+                      partialsDir: path.resolve(__dirname, "templateViews"),
+                      defaultLayout: false,
+                    },
+                    viewPath: path.resolve(__dirname, "templateViews"),
+                    extName: ".handlebars",
+                  };
+                
+                  transporter.use(
+                    "compile",
+                    hbs(handlebarOptions),
+                  );
+                
+                  var mailOptions = {
+                    from: "nachiketgk.cs18@rvce.edu.in",
+                    to: playerEmail,
+                    subject: "eSports Community official mail service",
+                    template: "addNewPlayer",
+                    context: {
+                      clanName,
+                      playerName
+                    },
+                  };
+                
+                  transporter.sendMail(mailOptions, (error, info) => {
+                    if (error) {
+                      res.send({ message:`${playerUsername} added to ${clanName} successfully but email error\n`+error.message, error: true });
+
+                      console.log("Error: ", error);
+                      //   alert(error.message)
+                    } else {
+                      // res.send({ message: info.response, error: false });
+                      //   alert(info.response);
+                      console.log("Email sent: " + info.response);
+                      if (!isResponseSent) {
+                        res.send(
+                          {
+                            error: false,
+                            message:
+                              `${playerUsername} added to ${clanName} successfully and email notification sent `,
+                          },
+                        );
+                        isResponseSent = true;
+                        return;
+                      }
+                    }
+                  });
+
+                  
+                }
+              },
+            );
+          } catch (err) {
+            console.log(err);
+            if (!isResponseSent) {
+              res.send({ error: true, message: err.message });
+              isResponseSent = true;
+              return;
+            }
+          }
         }
       },
     );
@@ -362,52 +454,16 @@ router.post("/addNewPlayer", (req, res, next) => {
     }
   }
 
-  setTimeout(() => {
-    try {
-      sql.query(
-        "insert into player_isMemberOf_clan(P_username,C_name,activity) values?",
-        [[[playerUsername, clanName, activity]]],
-        (err, results, fields) => {
-          if (err) {
-            console.log(err);
-            if (!isResponseSent) {
-              res.send({ error: true, message: err.sqlMessage });
-              isResponseSent = true;
-              return;
-            }
-          } else {
-            console.log("Player added to clan successfully");
-            if (!isResponseSent) {
-              res.send(
-                {
-                  error: false,
-                  message:
-                    `${playerUsername} added to ${clanName} successfully`,
-                },
-              );
-              isResponseSent = true;
-              return;
-            }
-          }
-        },
-      );
-    } catch (err) {
-      console.log(err);
-      if (!isResponseSent) {
-        res.send({ error: true, message: err.message });
-        isResponseSent = true;
-        return;
-      }
-    }
-  }, 1000);
+  // setTimeout(() => {
+
+  // }, 1000);
 });
 
 router.post("/requestToJoin", (req, res, next) => {
   const { clanEmail, playerUsername } = req.body;
-  var imageUrl = require("./images/game.jpg");
 
-  var nodemailer = require("nodemailer");
-  var hbs = require("nodemailer-express-handlebars");
+  console.log(req.body);
+
   var transporter = nodemailer.createTransport({
     service: "gmail",
     auth: {
@@ -435,20 +491,19 @@ router.post("/requestToJoin", (req, res, next) => {
     from: "nachiketgk.cs18@rvce.edu.in",
     to: clanEmail,
     subject: "eSports Community official mail service",
-    template: "main",
+    template: "requestToJoinClan",
     context: {
       playerUsername,
-      imageUrl,
     },
   };
 
   transporter.sendMail(mailOptions, (error, info) => {
     if (error) {
       res.send({ message: error.message, error: true });
-      console.log(error);
+      console.log("Error: ", error);
       //   alert(error.message)
     } else {
-      res.send({ message: info.message, error: false });
+      res.send({ message: info.response, error: false });
       //   alert(info.response);
       console.log("Email sent: " + info.response);
     }
