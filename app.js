@@ -14,6 +14,7 @@ var loginRouter = require('./routes/login');
 var youtubeRouter = require('./routes/youtube');
 var gameRouter = require('./routes/game');
 var citystateRouter = require('./routes/citystate');
+var eventRouter = require('./routes/events');
 // var specificPlayerRouter = require('./routes/specificPlayer');
 
 var app = express();
@@ -39,6 +40,7 @@ app.use('/clan',clanRouter);
 app.use('/youtube',youtubeRouter);
 app.use('/game',gameRouter);
 app.use('/citystate',citystateRouter);
+app.use('/event',eventRouter);
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {

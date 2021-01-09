@@ -509,4 +509,51 @@ router.post("/requestToJoin", (req, res, next) => {
     }
   });
 });
+
+router.post('/fetchClanMemberData',(req,res,next) => {
+  const {playerUsername} = req.body;
+  var isResponseSent=false;
+
+  try {
+
+    sql.query('select * from player_isMemberOf_clan where P_username=?',
+    [[playerUsername]],
+    (err,results,fields)=>{
+      if(err){
+
+        console.log(err);
+        if(!isResponseSent){
+          req.send({error:true, message:err.sqlMessage, data:[]});
+          isResponseSent=true;
+          return;
+        }
+
+      } else if(results.length===0){
+        console.log("Player is still not a member of any clan");
+        if(!isResponseSent){
+          res.send({error:false, message:"Player is still not a member of any clan", data:[]});
+          isResponseSent=true;
+          return;
+        }
+
+      } else {
+        console.log(playerUsername," is already member of ",results[0].C_name);
+        if(!isResponseSent){
+          res.send({error:false, message:`${playerUsername} is already member of ${results[0].C_name}`, data:results});
+          isResponseSent=true;
+          return;
+        }
+      }
+    })
+
+  } catch(err){
+    console.log(err);
+    if(!isResponseSent){
+      req.send({error:true, message:err.message, data:[]});
+      isResponseSent=true;
+      return;
+    }
+  }
+
+})
 module.exports = router;
