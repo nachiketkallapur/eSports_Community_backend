@@ -229,22 +229,7 @@ router.post("/update", (req, res, next) => {
   const { P_name, P_username, P_city, P_state, P_age, Y_channelName, P_email } =
     req.body;
 
-  // try{
-  //   sql.query("insert into citystate(P_city,P_state) values?",[[[P_city,P_state]]],
-  //   (err,results,fields)=>{
-  //     if(err){
-  //       console.log(err);
-  //       res.send({message:err.sqlMessage,error:false}); return;
-  //     } else {
-  //       console.log("updated citystate table");
-  //       // res.send({message:"Updated citystate table",error:false}); return;
-  //     }
-  //   })
-  // } catch(err){
-  //   console.log(err);
-  //   res.send({message:err.message,error:true});return;
-  // }
-
+  var isResponseSent = false;
   try {
     sql.query(
       "update player set P_name=?,P_age=?,P_email=? where P_username=?",
@@ -252,8 +237,11 @@ router.post("/update", (req, res, next) => {
       (err, results, fields) => {
         if (err) {
           console.log(err);
-          res.send({ message: err.sqlMessage, error: true });
-          return;
+          if (!isResponseSent) {
+            res.send({ message: err.sqlMessage, error: true });
+            isResponseSent = true;
+            return;
+          }
         } else {
           console.log("updated player table");
           // res.send({message:"updated player table",error:false}); return;
@@ -277,25 +265,30 @@ router.post("/update", (req, res, next) => {
           return;
         } else {
           console.log("updated youtube table");
-          res.send(
-            { message: "updated player and youtube table", error: false },
-          );
-          return;
+          if (!isResponseSent) {
+            res.send(
+              { message: "updated player and youtube table", error: false },
+            );
+            isResponseSent = true;
+            return;
+          }
         }
       },
     );
   } catch (err) {
     console.log(err);
-    res.send({ message: err.message, error: true });
+    if (!isResponseSent) {
+      res.send({ message: err.message, error: true });
+      isResponseSent = true;
+      return;
+    }
   }
 });
 
-router.delete('/', (req,res,next) => {
-  console.log(req.body);
+// router.delete("/", (req, res, next) => {
+//   console.log(req.body);
 
-  res.send("success")
-
-})
-
+//   res.send("success");
+// });
 
 module.exports = router;

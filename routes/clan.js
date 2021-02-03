@@ -20,7 +20,6 @@ router.post("/", async (req, res, next) => {
     clanPassword,
   } = req.body;
 
-
   try {
     var salt = await bcrypt.genSalt();
     var hashedPassword = await bcrypt.hash(clanPassword, salt);
@@ -296,8 +295,8 @@ router.post("/addNewPlayer", (req, res, next) => {
   /*First time player joins any clan*/
   var isResponseSent = false;
 
-  const { playerUsername, clanUsername, playerEmail,playerName } = req.body;
-  console.log("299" ,req.body);
+  const { playerUsername, clanUsername, playerEmail, playerName } = req.body;
+  console.log("299", req.body);
   const activity = 0;
   var clanName;
 
@@ -334,144 +333,169 @@ router.post("/addNewPlayer", (req, res, next) => {
     }
   }
 
-  try{
-    sql.query('select * from player_isMemberOf_clan',(err,results,fields) => {
-      if(err){
-        console.log(err);
-        if(!isResponseSent) {
-          res.send({error:true, message:err.sqlMessage});
-          isResponseSent=true;
-          return;
-        }
-      } else {
-        var temp = results.map(ele => ele.P_username);
-
-        if(temp.includes(playerUsername)){
-          console.log("player is already member of a clan");
-          if(!isResponseSent){
-            res.send({error:true, message: "Player is already member of a clan cannot add to one more clan"});
-            isResponseSent=true;
-            return;
-          }
-        }
-      }
-    })
-  } catch(err){
-    console.log(err);
-    if(!isResponseSent){
-      res.send({message:err.message, error:true});
-      isResponseSent=true;
-      return;
-    }
-  }
-
   try {
     sql.query(
-      "select C_name from clan where C_username=?",
-      [[clanUsername]],
+      "select * from player_isMemberOf_clan",
       (err, results, fields) => {
         if (err) {
           console.log(err);
           if (!isResponseSent) {
             res.send({ error: true, message: err.sqlMessage });
-            return;
-          }
-        } else if (results.length === 0) {
-          console.log("Such clan doesn't exist");
-          if (!isResponseSent) {
-            res.send({ error: true, message: "Such clan doesn't exist" });
             isResponseSent = true;
             return;
           }
         } else {
-          console.log("Fetched clanName from clanUsername");
-          clanName = results[0].C_name;
-          /*Now insert into player_isMemberOf_clan*/
-          try {
-            sql.query(
-              "insert into player_isMemberOf_clan(P_username,C_name,activity) values?",
-              [[[playerUsername, clanName, activity]]],
-              (err, results, fields) => {
-                if (err) {
-                  console.log(err);
-                  if (!isResponseSent) {
-                    res.send({ error: true, message: err.sqlMessage });
-                    isResponseSent = true;
-                    return;
-                  }
-                } else {
-                  console.log("Player added to clan successfully");
+          var temp = results.map((ele) => ele.P_username);
 
-                  /*Send email notification to player that he was added to a clan*/
+          if (temp.includes(playerUsername)) {
+            console.log("player is already member of a clan");
+            if (!isResponseSent) {
+              res.send(
+                {
+                  error: true,
+                  message:
+                    "Player is already member of a clan cannot add to one more clan",
+                },
+              );
+              isResponseSent = true;
+              return;
+            }
+          } else {
+            try {
+              sql.query(
+                "select C_name from clan where C_username=?",
+                [[clanUsername]],
+                (err, results, fields) => {
+                  if (err) {
+                    console.log(err);
+                    if (!isResponseSent) {
+                      res.send({ error: true, message: err.sqlMessage });
+                      return;
+                    }
+                  } else if (results.length === 0) {
+                    console.log("Such clan doesn't exist");
+                    if (!isResponseSent) {
+                      res.send(
+                        { error: true, message: "Such clan doesn't exist" },
+                      );
+                      isResponseSent = true;
+                      return;
+                    }
+                  } else {
+                    console.log("Fetched clanName from clanUsername");
+                    clanName = results[0].C_name;
+                    /*Now insert into player_isMemberOf_clan*/
+                    try {
+                      sql.query(
+                        "insert into player_isMemberOf_clan(P_username,C_name,activity) values?",
+                        [[[playerUsername, clanName, activity]]],
+                        (err, results, fields) => {
+                          if (err) {
+                            console.log(err);
+                            if (!isResponseSent) {
+                              res.send(
+                                { error: true, message: err.sqlMessage },
+                              );
+                              isResponseSent = true;
+                              return;
+                            }
+                          } else {
+                            console.log("Player added to clan successfully");
 
-                  var transporter = nodemailer.createTransport({
-                    service: "gmail",
-                    auth: {
-                      user: "nachiketgk.cs18@rvce.edu.in",
-                      pass: "Jaishriram123",
-                    },
-                  });
-                
-                  const handlebarOptions = {
-                    viewEngine: {
-                      extName: ".handlebars",
-                      partialsDir: path.resolve(__dirname, "templateViews"),
-                      defaultLayout: false,
-                    },
-                    viewPath: path.resolve(__dirname, "templateViews"),
-                    extName: ".handlebars",
-                  };
-                
-                  transporter.use(
-                    "compile",
-                    hbs(handlebarOptions),
-                  );
-                
-                  var mailOptions = {
-                    from: "nachiketgk.cs18@rvce.edu.in",
-                    to: playerEmail,
-                    subject: "eSports Community official mail service",
-                    template: "addNewPlayer",
-                    context: {
-                      clanName,
-                      playerName
-                    },
-                  };
-                
-                  transporter.sendMail(mailOptions, (error, info) => {
-                    if (error) {
-                      res.send({ message:`${playerUsername} added to ${clanName} successfully but email error\n`+error.message, error: true });
+                            /*Send email notification to player that he was added to a clan*/
 
-                      console.log("Error: ", error);
-                      //   alert(error.message)
-                    } else {
-                      // res.send({ message: info.response, error: false });
-                      //   alert(info.response);
-                      console.log("Email sent: " + info.response);
+                            var transporter = nodemailer.createTransport({
+                              service: "gmail",
+                              auth: {
+                                user: "nachiketgk.cs18@rvce.edu.in",
+                                pass: "Jaishriram123",
+                              },
+                            });
+
+                            const handlebarOptions = {
+                              viewEngine: {
+                                extName: ".handlebars",
+                                partialsDir: path.resolve(
+                                  __dirname,
+                                  "templateViews",
+                                ),
+                                defaultLayout: false,
+                              },
+                              viewPath: path.resolve(
+                                __dirname,
+                                "templateViews",
+                              ),
+                              extName: ".handlebars",
+                            };
+
+                            transporter.use(
+                              "compile",
+                              hbs(handlebarOptions),
+                            );
+
+                            var mailOptions = {
+                              from: "nachiketgk.cs18@rvce.edu.in",
+                              to: playerEmail,
+                              subject:
+                                "eSports Community official mail service",
+                              template: "addNewPlayer",
+                              context: {
+                                clanName,
+                                playerName,
+                              },
+                            };
+
+                            transporter.sendMail(mailOptions, (error, info) => {
+                              if (error) {
+                                res.send(
+                                  {
+                                    message:
+                                      `${playerUsername} added to ${clanName} successfully but email error\n` +
+                                      error.message,
+                                    error: true,
+                                  },
+                                );
+
+                                console.log("Error: ", error);
+                                //   alert(error.message)
+                              } else {
+                                // res.send({ message: info.response, error: false });
+                                //   alert(info.response);
+                                console.log("Email sent: " + info.response);
+                                if (!isResponseSent) {
+                                  res.send(
+                                    {
+                                      error: false,
+                                      message:
+                                        `${playerUsername} added to ${clanName} successfully and email notification sent `,
+                                    },
+                                  );
+                                  isResponseSent = true;
+                                  return;
+                                }
+                              }
+                            });
+                          }
+                        },
+                      );
+                    } catch (err) {
+                      console.log(err);
                       if (!isResponseSent) {
-                        res.send(
-                          {
-                            error: false,
-                            message:
-                              `${playerUsername} added to ${clanName} successfully and email notification sent `,
-                          },
-                        );
+                        res.send({ error: true, message: err.message });
                         isResponseSent = true;
                         return;
                       }
                     }
-                  });
-
-                  
-                }
-              },
-            );
-          } catch (err) {
-            console.log(err);
-            if (!isResponseSent) {
-              res.send({ error: true, message: err.message });
-              isResponseSent = true;
-              return;
+                  }
+                },
+              );
+            } catch (err) {
+              console.log(err);
+              if (!isResponseSent) {
+                res.send({ error: true, message: err.message });
+                isResponseSent = true;
+                return;
+              }
             }
           }
         }
@@ -480,7 +504,7 @@ router.post("/addNewPlayer", (req, res, next) => {
   } catch (err) {
     console.log(err);
     if (!isResponseSent) {
-      res.send({ error: true, message: err.message });
+      res.send({ message: err.message, error: true });
       isResponseSent = true;
       return;
     }
@@ -542,50 +566,64 @@ router.post("/requestToJoin", (req, res, next) => {
   });
 });
 
-router.post('/fetchClanMemberData',(req,res,next) => {
-  const {playerUsername} = req.body;
-  var isResponseSent=false;
+router.post("/fetchClanMemberData", (req, res, next) => {
+  const { playerUsername } = req.body;
+  var isResponseSent = false;
 
   try {
-
-    sql.query('select * from player_isMemberOf_clan where P_username=?',
-    [[playerUsername]],
-    (err,results,fields)=>{
-      if(err){
-
-        console.log(err);
-        if(!isResponseSent){
-          req.send({error:true, message:err.sqlMessage, data:[]});
-          isResponseSent=true;
-          return;
+    sql.query(
+      "select * from player_isMemberOf_clan where P_username=?",
+      [[playerUsername]],
+      (err, results, fields) => {
+        if (err) {
+          console.log(err);
+          if (!isResponseSent) {
+            req.send({ error: true, message: err.sqlMessage, data: [] });
+            isResponseSent = true;
+            return;
+          }
+        } else if (results.length === 0) {
+          console.log("Player is still not a member of any clan");
+          if (!isResponseSent) {
+            res.send(
+              {
+                error: false,
+                message: "Player is still not a member of any clan",
+                data: [],
+              },
+            );
+            isResponseSent = true;
+            return;
+          }
+        } else {
+          console.log(
+            playerUsername,
+            " is already member of ",
+            results[0].C_name,
+          );
+          if (!isResponseSent) {
+            res.send(
+              {
+                error: false,
+                message: `${playerUsername} is already member of ${
+                  results[0].C_name
+                }`,
+                data: results,
+              },
+            );
+            isResponseSent = true;
+            return;
+          }
         }
-
-      } else if(results.length===0){
-        console.log("Player is still not a member of any clan");
-        if(!isResponseSent){
-          res.send({error:false, message:"Player is still not a member of any clan", data:[]});
-          isResponseSent=true;
-          return;
-        }
-
-      } else {
-        console.log(playerUsername," is already member of ",results[0].C_name);
-        if(!isResponseSent){
-          res.send({error:false, message:`${playerUsername} is already member of ${results[0].C_name}`, data:results});
-          isResponseSent=true;
-          return;
-        }
-      }
-    })
-
-  } catch(err){
+      },
+    );
+  } catch (err) {
     console.log(err);
-    if(!isResponseSent){
-      req.send({error:true, message:err.message, data:[]});
-      isResponseSent=true;
+    if (!isResponseSent) {
+      req.send({ error: true, message: err.message, data: [] });
+      isResponseSent = true;
       return;
     }
   }
-
-})
+});
 module.exports = router;
