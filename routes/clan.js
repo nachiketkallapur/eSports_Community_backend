@@ -20,6 +20,7 @@ router.post("/", async (req, res, next) => {
     clanPassword,
   } = req.body;
 
+
   try {
     var salt = await bcrypt.genSalt();
     var hashedPassword = await bcrypt.hash(clanPassword, salt);
@@ -48,7 +49,7 @@ router.post("/", async (req, res, next) => {
             isResponseSent = true;
           }
         } else {
-          console.log(err);
+          console.log(err.sqlMessage);
           if (!isResponseSent) {
             res.send(err.sqlMessage);
             isResponseSent = true;
@@ -296,7 +297,7 @@ router.post("/addNewPlayer", (req, res, next) => {
   var isResponseSent = false;
 
   const { playerUsername, clanUsername, playerEmail,playerName } = req.body;
-  console.log("299" ,req.body)
+  console.log("299" ,req.body);
   const activity = 0;
   var clanName;
 
@@ -329,6 +330,37 @@ router.post("/addNewPlayer", (req, res, next) => {
     if (!isResponseSent) {
       res.send({ error: true, message: err.message });
       isResponseSent = true;
+      return;
+    }
+  }
+
+  try{
+    sql.query('select * from player_isMemberOf_clan',(err,results,fields) => {
+      if(err){
+        console.log(err);
+        if(!isResponseSent) {
+          res.send({error:true, message:err.sqlMessage});
+          isResponseSent=true;
+          return;
+        }
+      } else {
+        var temp = results.map(ele => ele.P_username);
+
+        if(temp.includes(playerUsername)){
+          console.log("player is already member of a clan");
+          if(!isResponseSent){
+            res.send({error:true, message: "Player is already member of a clan cannot add to one more clan"});
+            isResponseSent=true;
+            return;
+          }
+        }
+      }
+    })
+  } catch(err){
+    console.log(err);
+    if(!isResponseSent){
+      res.send({message:err.message, error:true});
+      isResponseSent=true;
       return;
     }
   }

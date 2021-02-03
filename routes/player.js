@@ -290,5 +290,12 @@ router.post("/update", (req, res, next) => {
   }
 });
 
+router.delete('/', (req,res,next) => {
+  console.log(req.body);
+
+  res.send("success")
+
+})
+
 
 module.exports = router;
