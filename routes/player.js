@@ -285,10 +285,10 @@ router.post("/update", (req, res, next) => {
   }
 });
 
-// router.delete("/", (req, res, next) => {
-//   console.log(req.body);
+router.delete("/", (req, res, next) => {
+  console.log(req.body);
 
-//   res.send("success");
-// });
+  res.send("success");
+});
 
 module.exports = router;

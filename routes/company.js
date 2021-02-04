@@ -19,8 +19,12 @@ router.post("/", async (req, res, next) => {
     var salt = await bcrypt.genSalt();
     var hashedPassword = await bcrypt.hash(companyPassword, salt);
   } catch (err) {
-    res.send(err);
-    isResponseSent = true;
+    console.log(err);
+    if(!isResponseSent){
+      res.send(err);
+      isResponseSent = true;
+      return;
+    }
   }
 
   try {
@@ -31,29 +35,31 @@ router.post("/", async (req, res, next) => {
         companyLocation,
         companyBio,
         companyUsername,
-        hashedPassword,
+        hashedPassword
       ]]],
       (err, results, fields) => {
         if (!err) {
-          console.log("Query1 successful");
           console.log("Successfully added data to database");
           if (!isResponseSent) {
-            res.send("Successfully added data to database");
+            res.send({message:"Successfully added data to database", error:false});
             isResponseSent = true;
+            return;
           }
         } else {
           console.log(err);
           if (!isResponseSent) {
-            res.send(err.sqlMessage);
+            res.send({message:err.sqlMessage, error:true});
             isResponseSent = true;
+            return;
           }
         }
       },
     );
   } catch (error) {
     if (!isResponseSent) {
-      res.send(error.message);
+      res.send({message:error.message,error:true});
       isResponseSent = true;
+      return;
     }
   }
 });
