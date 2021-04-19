@@ -10,6 +10,13 @@ var usersRouter = require('./routes/users');
 var playerRouter = require('./routes/player');
 var companyRouter = require('./routes/company');
 var clanRouter = require('./routes/clan');
+var loginRouter = require('./routes/login');
+var youtubeRouter = require('./routes/youtube');
+var gameRouter = require('./routes/game');
+var citystateRouter = require('./routes/citystate');
+var eventRouter = require('./routes/events');
+// var specificPlayerRouter = require('./routes/specificPlayer');
+
 var app = express();
 
 // view engine setup
@@ -24,10 +31,16 @@ app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 
 app.use('/', indexRouter);
+app.use('/login', loginRouter);
 app.use('/users', usersRouter);
 app.use('/player',playerRouter);
+// app.use('/player/:username/',specificPlayerRouter);
 app.use('/company',companyRouter);
 app.use('/clan',clanRouter);
+app.use('/youtube',youtubeRouter);
+app.use('/game',gameRouter);
+app.use('/citystate',citystateRouter);
+app.use('/event',eventRouter);
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {
