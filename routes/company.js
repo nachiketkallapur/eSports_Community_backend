@@ -20,7 +20,7 @@ router.post("/", async (req, res, next) => {
     var hashedPassword = await bcrypt.hash(companyPassword, salt);
   } catch (err) {
     console.log(err);
-    if(!isResponseSent){
+    if (!isResponseSent) {
       res.send(err);
       isResponseSent = true;
       return;
@@ -35,20 +35,22 @@ router.post("/", async (req, res, next) => {
         companyLocation,
         companyBio,
         companyUsername,
-        hashedPassword
+        hashedPassword,
       ]]],
       (err, results, fields) => {
         if (!err) {
           console.log("Successfully added data to database");
           if (!isResponseSent) {
-            res.send({message:"Successfully added data to database", error:false});
+            res.send(
+              { message: "Successfully added data to database", error: false },
+            );
             isResponseSent = true;
             return;
           }
         } else {
           console.log(err);
           if (!isResponseSent) {
-            res.send({message:err.sqlMessage, error:true});
+            res.send({ message: err.sqlMessage, error: true });
             isResponseSent = true;
             return;
           }
@@ -57,7 +59,7 @@ router.post("/", async (req, res, next) => {
     );
   } catch (error) {
     if (!isResponseSent) {
-      res.send({message:error.message,error:true});
+      res.send({ message: error.message, error: true });
       isResponseSent = true;
       return;
     }
@@ -167,6 +169,99 @@ router.post("/update", (req, res, next) => {
     console.log(err.message);
     if (!isResponseSent) {
       res.send({ message: err.message, error: true });
+      isResponseSent = true;
+      return;
+    }
+  }
+});
+
+router.post("/sponsor", (req, res, next) => {
+  const { companyUsername, game } = req.body;
+  var isResponseSent = false;
+
+  try {
+    sql.query(
+      "select * from company_sponsors_game where Comp_username=? and G_name=?",
+      [companyUsername, game],
+      (err, results, fields) => {
+        if (err) {
+          console.log(err);
+          if (!isResponseSent) {
+            res.send({ error: true, mesage: err.sqlMessage });
+            isResponseSent = true;
+            return;
+          }
+        } else if (results.length > 0) {
+          console.log(
+            companyUsername,
+            " has already conducted one event for ",
+            game,
+          );
+          if (!isResponseSent) {
+            res.send(
+              {
+                error: false,
+                message: companyUsername +
+                  " has already conducted one event for " + game,
+              },
+            );
+            isResponseSent = true;
+            return;
+          }
+        } else {
+          console.log(
+            companyUsername,
+            game,
+            " record doesn't exists in the table company_sponsors_game",
+          );
+
+          try {
+            sql.query(
+              "insert into company_sponsors_game(Comp_username,G_name) values?",
+              [[[companyUsername, game]]],
+              (err, results, fields) => {
+                if (err) {
+                  console.log(err);
+                  if (!isResponseSent) {
+                    res.send({ error: true, message: err.sqlMessage });
+                    isResponseSent = true;
+                    return;
+                  }
+                } else {
+                  console.log(
+                    companyUsername,
+                    game,
+                    " record inserted successfully into the table company_sponsors_game",
+                  );
+                  if (!isResponseSent) {
+                    res.send(
+                      {
+                        error: false,
+                        messge: companyUsername + "," + game +
+                          " record inserted successfully into the table company_sponsors_game",
+                      },
+                    );
+                    isResponseSent = true;
+                    return;
+                  }
+                }
+              },
+            );
+          } catch (err) {
+            console.log(err);
+            if (!isResponseSent) {
+              res.send({ error: true, message: err.message });
+              isResponseSent = true;
+              return;
+            }
+          }
+        }
+      },
+    );
+  } catch (err) {
+    console.log(err);
+    if (!isResponseSent) {
+      res.send({ error: true, message: err.message });
       isResponseSent = true;
       return;
     }
